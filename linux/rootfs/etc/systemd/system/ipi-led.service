@@ -1,0 +1,13 @@
+[Unit]
+Description=Trigger IPI to flash LEDs
+Wants=modprobe@uio_pdrv_genirq.service
+After=modprobe@uio_pdrv_genirq.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ipi-led
+DevicePolicy=closed
+DeviceAllow=char-uio
+
+[Install]
+WantedBy=multi-user.target

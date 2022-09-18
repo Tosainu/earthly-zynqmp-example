@@ -1,0 +1,12 @@
+[Unit]
+Description=Setup USB Gadget Ethernet
+Wants=network.target sys-kernel-config.mount modprobe@libcomposite.service
+After=network.target sys-kernel-config.mount modprobe@libcomposite.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/setup-usb-ether.sh
+
+[Install]
+WantedBy=multi-user.target

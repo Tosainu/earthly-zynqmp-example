@@ -1,0 +1,11 @@
+[Unit]
+Description=Maximize the root partition
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/sbin/parted /dev/mmcblk0 resizepart 2 100%%
+ExecStart=-/usr/sbin/resize2fs /dev/mmcblk0p2
+ExecStart=/usr/bin/systemctl disable %N
+
+[Install]
+WantedBy=multi-user.target

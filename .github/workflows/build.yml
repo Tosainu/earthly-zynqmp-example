@@ -1,0 +1,36 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    concurrency: concurrency-group-to-prevent-cache-race
+    steps:
+      - uses: docker/setup-qemu-action@v2.0.0
+        with:
+          platforms: arm64
+      - uses: docker/login-action@v2.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v3.0.2
+        with:
+          lfs: true
+          persist-credentials: false
+      - name: Install Earthly
+        uses: ./.github/actions/install-earthly
+      - run: earthly --artifact --allow-privileged --ci +build/\* --XSA_FILE=design_1_wrapper.xsa /tmp/build/
+        env:
+          EARTHLY_MAX_REMOTE_CACHE: ${{ github.ref == 'refs/heads/main' }}
+          EARTHLY_PUSH: ${{ github.ref == 'refs/heads/main' }}
+          EARTHLY_REMOTE_CACHE: ghcr.io/tosainu/earthly-zynqmp-example:build-cache
+          FORCE_COLOR: true
+      - uses: actions/upload-artifact@v3.1.0
+        with:
+          name: build
+          path: /tmp/build

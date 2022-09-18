@@ -1,0 +1,217 @@
+// SPDX-License-Identifier: GPL-2.0+
+
+// Some parts are based on arch/arm64/boot/dts/xilinx/zynqmp-zcu100-revC.dts in the
+// Xilinx/linux-xlnx repository which is licensed under GPL-2.0+.
+// /*
+//  * dts file for Xilinx ZynqMP ZCU100 revC
+//  *
+//  * (C) Copyright 2016 - 2021, Xilinx, Inc.
+//  *
+//  * Michal Simek <michal.simek@xilinx.com>
+//  * Nathalie Chan King Choy
+//  */
+
+#include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
+#include <dt-bindings/phy/phy.h>
+
+/ {
+  model = "Avnet Ultra96-V2 Rev1";
+
+  chosen {
+    bootargs = "earlycon clk_ignore_unused root=/dev/mmcblk0p2 rw rootwait uio_pdrv_genirq.of_id=generic-uio systemd.unit=multi-user.target";
+  };
+
+  ipi-ctrl@ff340000 {
+    compatible = "generic-uio";
+    reg = <0x0 0xff340000 0x0 0x1000>;  // IPI Ch 7
+    interrupt-parent = <&gic>;
+    interrupts = <0 29 4>;
+  };
+
+  ipi-buffer@ff990000 {
+    compatible = "generic-uio";
+    reg = <0x0 0xff990600 0x0 0x20>, // APU (Ch 7, buffer_index = 3)  -> RPU0 request
+          <0x0 0xff990620 0x0 0x20>, // RPU0 (Ch 2, buffer_index = 0) -> APU response
+          <0x0 0xff9900c0 0x0 0x20>, // RPU0 (Ch 2, buffer_index = 0) -> APU request
+          <0x0 0xff9900e0 0x0 0x20>; // APU (Ch 7, buffer_index = 3)  -> RPU0 response
+  };
+
+  // PS-GTR reference clocks (5P49V6975 in V2, SI5335A in V1)
+  psgtr_clk0_26m: psgtr-clk0-26m {
+    compatible = "fixed-clock";
+    #clock-cells = <0>;
+    clock-frequency = <26000000>;  // 26 MHz clock for USB
+  };
+  psgtr_clk1_27m: psgtr-clk1-27m {
+    compatible = "fixed-clock";
+    #clock-cells = <0>;
+    clock-frequency = <27000000>;  // 27 MHz clock for DP
+  };
+};
+
+&pinctrl0 {
+  status = "okay";
+
+  pinctrl_sdhci0_default: sdhci0-default {
+    mux {
+      groups = "sdio0_3_grp";
+      function = "sdio0";
+    };
+
+    conf {
+      groups = "sdio0_3_grp";
+      slew-rate = <SLEW_RATE_SLOW>;
+      power-source = <IO_STANDARD_LVCMOS18>;
+      bias-disable;
+    };
+
+    mux-cd {
+      groups = "sdio0_cd_0_grp";
+      function = "sdio0_cd";
+    };
+
+    conf-cd {
+      groups = "sdio0_cd_0_grp";
+      bias-high-impedance;
+      bias-pull-up;
+      slew-rate = <SLEW_RATE_SLOW>;
+      power-source = <IO_STANDARD_LVCMOS18>;
+    };
+  };
+
+  pinctrl_uart1_default: uart1-default {
+    mux {
+      groups = "uart1_0_grp";
+      function = "uart1";
+    };
+
+    conf {
+      groups = "uart1_0_grp";
+      slew-rate = <SLEW_RATE_SLOW>;
+      power-source = <IO_STANDARD_LVCMOS18>;
+    };
+
+    conf-rx {
+      pins = "MIO1";
+      bias-high-impedance;
+    };
+
+    conf-tx {
+      pins = "MIO0";
+      bias-disable;
+    };
+  };
+
+  pinctrl_usb0_default: usb0-default {
+    mux {
+      groups = "usb0_0_grp";
+      function = "usb0";
+    };
+
+    conf {
+      groups = "usb0_0_grp";
+      power-source = <IO_STANDARD_LVCMOS18>;
+    };
+
+    conf-rx {
+      pins = "MIO52", "MIO53", "MIO55";
+      bias-high-impedance;
+      drive-strength = <12>;
+      slew-rate = <SLEW_RATE_FAST>;
+    };
+
+    conf-tx {
+      pins = "MIO54", "MIO56", "MIO57", "MIO58", "MIO59",
+             "MIO60", "MIO61", "MIO62", "MIO63";
+      bias-disable;
+      drive-strength = <4>;
+      slew-rate = <SLEW_RATE_SLOW>;
+    };
+  };
+
+  pinctrl_usb1_default: usb1-default {
+    mux {
+      groups = "usb1_0_grp";
+      function = "usb1";
+    };
+
+    conf {
+      groups = "usb1_0_grp";
+      power-source = <IO_STANDARD_LVCMOS18>;
+    };
+
+    conf-rx {
+      pins = "MIO64", "MIO65", "MIO67";
+      bias-high-impedance;
+      drive-strength = <12>;
+      slew-rate = <SLEW_RATE_FAST>;
+    };
+
+    conf-tx {
+      pins = "MIO66", "MIO68", "MIO69", "MIO70", "MIO71",
+             "MIO72", "MIO73", "MIO74", "MIO75";
+      bias-disable;
+      drive-strength = <4>;
+      slew-rate = <SLEW_RATE_SLOW>;
+    };
+  };
+};
+
+&gpio {
+  gpio-reserved-ranges = <17 4>;
+};
+
+&lpd_watchdog {
+  status = "reserved";
+};
+
+&uart1 {
+  pinctrl-names = "default";
+  pinctrl-0 = <&pinctrl_uart1_default>;
+};
+
+&sdhci0 {
+  status = "okay";
+  no-1-8-v;
+  disable-wp;
+  pinctrl-names = "default";
+  pinctrl-0 = <&pinctrl_sdhci0_default>;
+};
+
+&sdhci1 {
+  status = "disabled";
+};
+
+&psgtr {
+  status = "okay";
+  clocks = <&psgtr_clk0_26m &psgtr_clk1_27m>;
+  clock-names = "ref0", "ref1";
+};
+
+&usb0 {
+  status = "okay";
+  pinctrl-names = "default";
+  pinctrl-0 = <&pinctrl_usb0_default>;
+  phy-names = "usb3-phy";
+  phys = <&psgtr 2 PHY_TYPE_USB3 0 0>;
+};
+
+&dwc3_0 {
+  status = "okay";
+  dr_mode = "peripheral";
+  maximum-speed = "super-speed";
+};
+
+&usb1 {
+  status = "okay";
+  pinctrl-names = "default";
+  pinctrl-0 = <&pinctrl_usb1_default>;
+  phy-names = "usb3-phy";
+  phys = <&psgtr 3 PHY_TYPE_USB3 1 0>;
+};
+
+&dwc3_1 {
+  status = "okay";
+  dr_mode = "host";
+  maximum-speed = "super-speed";
+};

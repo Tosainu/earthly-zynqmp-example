@@ -1,0 +1,5 @@
+[Match]
+Path=platform-fe200000.usb
+
+[Network]
+DHCP=yes
