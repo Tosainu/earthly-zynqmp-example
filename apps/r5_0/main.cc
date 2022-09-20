@@ -32,7 +32,7 @@ static void ttc_irq_handler(void* data) noexcept {
   auto ttc = static_cast<XTtcPs*>(data);
   const auto status = XTtcPs_GetInterruptStatus(ttc);
   if (status & XTTCPS_IXR_INTERVAL_MASK) {
-    ttc_irq_kicked_n.clear();
+    ttc_irq_kicked_n.clear(std::memory_order_relaxed);
 
     XTtcPs_ClearInterruptStatus(ttc, XTTCPS_IXR_INTERVAL_MASK);
   }
