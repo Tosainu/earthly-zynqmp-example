@@ -7,21 +7,15 @@ file link -symbolic system.bit $bit_file
 
 hsi set_repo_path embeddedsw
 
-hsi create_sw_design fsbl -proc psu_cortexa53_0 -os standalone
+hsi create_sw_design fsbl -proc psu_cortexa53_0 -app zynqmp_fsbl
 hsi set_property CONFIG.stdin  psu_uart_1 [hsi get_os]
 hsi set_property CONFIG.stdout psu_uart_1 [hsi get_os]
-hsi add_library xilffs
-hsi add_library xilpm
-hsi add_library xilsecure
 hsi generate_app -app zynqmp_fsbl -dir fsbl
 hsi close_sw_design [hsi current_sw_design]
 
-hsi create_sw_design pmufw -proc psu_pmu_0 -os standalone
+hsi create_sw_design pmufw -proc psu_pmu_0 -app zynqmp_pmufw
 hsi set_property CONFIG.stdin  psu_uart_1 [hsi get_os]
 hsi set_property CONFIG.stdout psu_uart_1 [hsi get_os]
-hsi add_library xilfpga
-hsi add_library xilsecure
-hsi add_library xilskey
 hsi generate_app -app zynqmp_pmufw -dir pmufw
 hsi close_sw_design [hsi current_sw_design]
 
