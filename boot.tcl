@@ -26,7 +26,7 @@ if { [string length $hw_server_url] } {
 
 puts "\[+\] reset system"
 targets -set -filter {name == "PSU"}
-rst -system
+rst -por
 
 puts "\[+\] PL: system.bit"
 targets -set -filter {name == "PL"}
@@ -53,7 +53,6 @@ targets -set -filter {name =~ "*A53*#0"}
 dow "$build_dir/u-boot.elf"
 dow "$build_dir/bl31.elf"
 dow -data "$build_dir/system.dtb" 0x100000
-dow -data "$build_dir/boot.scr" 0x20000000
 con
 
 puts "\[+\] R5 #0: ipi-led.elf"
