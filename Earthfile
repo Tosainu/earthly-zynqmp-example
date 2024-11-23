@@ -1,18 +1,18 @@
 VERSION 0.8
 
 prep:
-    FROM ubuntu:jammy@sha256:340d9b015b194dc6e2a13938944e0d016e57b9679963fdeb9ce021daac430221
+    FROM ubuntu:noble@sha256:278628f08d4979fb9af9ead44277dbc9c92c2465922310916ad0c46ec9999295
     RUN \
         apt-get update && \
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             autoconf automake bc bison build-essential ca-certificates cmake cpio \
             crossbuild-essential-arm64 curl debhelper dbus-x11 dosfstools e2fsprogs fdisk flex gzip \
-            kmod libncurses-dev libssl-dev libtinfo5 libtool-bin locales rsync xz-utils zstd && \
+            kmod libncurses-dev libssl-dev libtinfo6 libtool-bin locales rsync xz-utils zstd && \
         rm -rf /var/lib/apt/lists/* && \
         sed -i 's/^#\s*\(en_US.UTF-8\)/\1/' /etc/locale.gen && \
         dpkg-reconfigure --frontend noninteractive locales
-    ARG XSCT_URL=https://petalinux.xilinx.com/sswreleases/rel-v2024.1/xsct-trim/xsct-2024-1_0515.tar.xz
-    ARG XSCT_SHA256SUM=b73be5f07312e48aa3ceb96d947a5c7b347caf2dd23c85c3db12893c319235d5
+    ARG XSCT_URL=https://petalinux.xilinx.com/sswreleases/rel-v2024.2/xsct-trim/xsct-2024-2_1104.tar.xz
+    ARG XSCT_SHA256SUM=7fc702dfd0d94cf2facbdd680b9fb4f873bdb43166ef19bb28acffdce1773c7b
     RUN --mount=type=tmpfs,target=/tmp \
         curl --no-progress-meter -L "${XSCT_URL}" -o /tmp/xsct.tar.xz && \
         echo "${XSCT_SHA256SUM} /tmp/xsct.tar.xz" | sha256sum -c - && \
@@ -40,7 +40,7 @@ disk.img.zst:
     COPY +boot.tar/ .
     COPY +rootfs.tar/ .
     ARG DISK_IMG_PART1_SIZE=16M
-    ARG DISK_IMG_PART2_SIZE=256M
+    ARG DISK_IMG_PART2_SIZE=512M
     RUN --mount=type=tmpfs,target=/tmp --privileged \
         truncate -s "$DISK_IMG_PART1_SIZE" /tmp/boot.img && \
         mkfs.vfat -F 16 /tmp/boot.img && \
@@ -158,7 +158,7 @@ generate-src:
     SAVE ARTIFACT system.bit
 
 rootfs-base.tar:
-    FROM --platform=linux/arm64 ubuntu:jammy@sha256:340d9b015b194dc6e2a13938944e0d016e57b9679963fdeb9ce021daac430221
+    FROM --platform=linux/arm64 ubuntu:noble@sha256:278628f08d4979fb9af9ead44277dbc9c92c2465922310916ad0c46ec9999295
     RUN apt-get update && \
         apt-get install -y --no-install-recommends mmdebstrap && \
         rm -rf /var/lib/apt/lists/*
@@ -181,15 +181,15 @@ rootfs-base.tar:
         --dpkgopt='path-include=/usr/share/locale/locale.alias' \
         --dpkgopt='path-exclude=/usr/share/doc/*' \
         --dpkgopt='path-include=/usr/share/doc/*/copyright' \
-        jammy rootfs-base.tar http://ports.ubuntu.com/ubuntu-ports
+        noble rootfs-base.tar http://ports.ubuntu.com/ubuntu-ports
     # Use .tar format since SAVE ARTIFACT and COPY drop permissions for some reason even specifying with the --keep-own option...
     SAVE ARTIFACT rootfs-base.tar
 
 bootgen:
     FROM +prep
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/bootgen/archive/refs/tags/xilinx_v2024.1.tar.gz -o /tmp/archive.tar.gz && \
-        echo '7879c7d40642bcf7adcec177a51cf73f95bd45d315f75d125d3fc1680c0a9b24  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/bootgen/archive/refs/tags/xilinx_v2024.2.tar.gz -o /tmp/archive.tar.gz && \
+        echo '2c8345a3bea4fcec6ceb6c8f8e727a610aaca3ec71cdf7f892d7f89f88438650  /tmp/archive.tar.gz' | sha256sum -c && \
         tar xf /tmp/archive.tar.gz --strip-components=1
     RUN make
     SAVE ARTIFACT bootgen
@@ -197,8 +197,8 @@ bootgen:
 linux:
     FROM +prep
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/linux-xlnx/archive/485728ba736edd5ba491e0ca8e9daa7f982a5df1.tar.gz -o /tmp/archive.tar.gz && \
-        echo 'f1dcaccd8965fb74fc69511fc69b97513bb87798611aecb542acafcde719cceb  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/linux-xlnx/archive/2b7f6f70a62a52a467bed030a27c2ada879106e9.tar.gz -o /tmp/archive.tar.gz && \
+        echo 'acc0dbd745328782dc67bac8c42cb02a93b9f06cd042177b92d0765af9c5dcfc  /tmp/archive.tar.gz' | sha256sum -c && \
         tar xf /tmp/archive.tar.gz --strip-components=1
     COPY linux/defconfig arch/arm64/configs/myboard_defconfig
     ARG nproc=$(nproc)
@@ -210,8 +210,8 @@ linux:
 tf-a:
     FROM +prep
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/arm-trusted-firmware/archive/refs/tags/xilinx-v2024.1.tar.gz -o /tmp/archive.tar.gz && \
-        echo 'bb0f1a7077bf02a012d14e9ee690d06ccb2b58871e4cd7c4a7c111508f7b5555  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/arm-trusted-firmware/archive/refs/tags/xilinx-v2024.2.tar.gz -o /tmp/archive.tar.gz && \
+        echo 'dbc8caad320364178f55e8df423877b0029d3913cde000f483dd55a06244471b  /tmp/archive.tar.gz' | sha256sum -c && \
         tar xf /tmp/archive.tar.gz --strip-components=1
     ARG nproc=$(nproc)
     RUN make CROSS_COMPILE=aarch64-linux-gnu- ARCH=aarch64 PLAT=zynqmp RESET_TO_BL31=1 ZYNQMP_CONSOLE=cadence1 bl31 -j$nproc
@@ -220,8 +220,8 @@ tf-a:
 u-boot:
     FROM +prep
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/u-boot-xlnx/archive/refs/tags/xilinx-v2024.1.tar.gz -o /tmp/archive.tar.gz && \
-        echo '32bcf6b792ef8c072e82ec7d0388f6d9659020bc35f9335e7fb2eff72bc819df  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/u-boot-xlnx/archive/refs/tags/xilinx-v2024.2.tar.gz -o /tmp/archive.tar.gz && \
+        echo '14d01cca4e8c90f4c22b6ca760f7368d167285ead2dbc83162428c0afe0af901  /tmp/archive.tar.gz' | sha256sum -c && \
         tar xf /tmp/archive.tar.gz --strip-components=1
     ARG nproc=$(nproc)
     COPY u-boot.defconfig configs/myboard_defconfig
@@ -233,13 +233,13 @@ u-boot:
 xsct:
     FROM +prep
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/embeddedsw/archive/refs/tags/xilinx_v2024.1.tar.gz -o /tmp/archive.tar.gz && \
-        echo '733fdb09b2525c1fa322242b97f015122aaf9e32530a824dec71d6328be83850  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/embeddedsw/archive/refs/tags/xilinx_v2024.2.tar.gz -o /tmp/archive.tar.gz && \
+        echo '550ba0b206848adb0085bc1ca5a6b6731681335c92912afb4a6a8dbb4c489a0c  /tmp/archive.tar.gz' | sha256sum -c && \
         mkdir -p embeddedsw && \
         tar xf /tmp/archive.tar.gz --strip-components=1 -C embeddedsw
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/device-tree-xlnx/archive/refs/tags/xilinx_v2024.1.tar.gz -o /tmp/archive.tar.gz && \
-        echo '8f47cbddc8d2e7a746f56e75ab729605d153edf9305021da382844209e6a6d9b  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/device-tree-xlnx/archive/refs/tags/xilinx_v2024.2.tar.gz -o /tmp/archive.tar.gz && \
+        echo 'ef254833819edccfdb3416593f682dc7e0c40d4c6c0d657a80a118fc914bd911  /tmp/archive.tar.gz' | sha256sum -c && \
         mkdir -p device-tree-xlnx && \
         tar xf /tmp/archive.tar.gz --strip-components=1 -C device-tree-xlnx
 
