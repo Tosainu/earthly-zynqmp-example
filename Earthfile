@@ -1,7 +1,7 @@
 VERSION 0.8
 
 prep:
-    FROM ubuntu:noble@sha256:278628f08d4979fb9af9ead44277dbc9c92c2465922310916ad0c46ec9999295
+    FROM ubuntu:noble@sha256:1e622c5f073b4f6bfad6632f2616c7f59ef256e96fe78bf6a595d1dc4376ac02
     RUN \
         apt-get update && \
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -11,8 +11,8 @@ prep:
         rm -rf /var/lib/apt/lists/* && \
         sed -i 's/^#\s*\(en_US.UTF-8\)/\1/' /etc/locale.gen && \
         dpkg-reconfigure --frontend noninteractive locales
-    ARG XSCT_URL=https://petalinux.xilinx.com/sswreleases/rel-v2024.2/xsct-trim/xsct-2024-2_1104.tar.xz
-    ARG XSCT_SHA256SUM=7fc702dfd0d94cf2facbdd680b9fb4f873bdb43166ef19bb28acffdce1773c7b
+    ARG XSCT_URL=https://petalinux.xilinx.com/sswreleases/rel-v2024.2/xsct-trim/xsct-2024.2_REL_1209.tar.xz
+    ARG XSCT_SHA256SUM=2ca6ee6d1349cc6484845b094d867e3953fdfe7d800e8b35863db15f39c2373c
     RUN --mount=type=tmpfs,target=/tmp \
         curl --no-progress-meter -L "${XSCT_URL}" -o /tmp/xsct.tar.xz && \
         echo "${XSCT_SHA256SUM} /tmp/xsct.tar.xz" | sha256sum -c - && \
@@ -158,7 +158,7 @@ generate-src:
     SAVE ARTIFACT system.bit
 
 rootfs-base.tar:
-    FROM --platform=linux/arm64 ubuntu:noble@sha256:278628f08d4979fb9af9ead44277dbc9c92c2465922310916ad0c46ec9999295
+    FROM --platform=linux/arm64 ubuntu:noble@sha256:1e622c5f073b4f6bfad6632f2616c7f59ef256e96fe78bf6a595d1dc4376ac02
     RUN apt-get update && \
         apt-get install -y --no-install-recommends mmdebstrap && \
         rm -rf /var/lib/apt/lists/*
