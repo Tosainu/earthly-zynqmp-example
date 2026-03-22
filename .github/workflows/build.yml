@@ -4,6 +4,7 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -22,9 +23,9 @@ jobs:
         with:
           lfs: true
           persist-credentials: false
-      - name: Install Earthly
-        uses: ./.github/actions/install-earthly
-      - run: earthly --artifact --allow-privileged --ci +build/\* --XSA_FILE=design_1_wrapper.xsa /tmp/build/
+      - name: Install EarthBuild
+        uses: ./.github/actions/install-earthbuild
+      - run: earth --artifact --allow-privileged --ci +build/\* --XSA_FILE=design_1_wrapper.xsa /tmp/build/
         env:
           EARTHLY_MAX_REMOTE_CACHE: ${{ github.ref == 'refs/heads/main' }}
           EARTHLY_PUSH: ${{ github.ref == 'refs/heads/main' }}
