@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    concurrency: concurrency-group-to-prevent-cache-race
     steps:
       - uses: docker/setup-qemu-action@v3.6.0
         with:
