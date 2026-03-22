@@ -103,7 +103,7 @@ inline constexpr std::size_t IPI_BUF_CH7_TO_R5_0 = 0x600 / 4;
 
 auto main() -> int {
   auto ipi_ctrl = [] {
-    auto d = find_and_open_uio_device("ipi-ctrl");
+    auto d = find_and_open_uio_device("ipi-ctrl@ff340000");
     if (!d) {
       std::cerr << "ipi-ctrl" << std::endl;
       std::exit(-1);
@@ -112,7 +112,7 @@ auto main() -> int {
   }();
 
   auto ipi_buf = [] {
-    auto d = find_and_open_uio_device("ipi-buffer");
+    auto d = find_and_open_uio_device("ipi-buffer@ff990000");
     if (!d) {
       std::cerr << "ipi-buffer" << std::endl;
       std::exit(-1);

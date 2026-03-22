@@ -1,18 +1,46 @@
 VERSION 0.8
 
 prep:
-    FROM ubuntu:noble@sha256:1e622c5f073b4f6bfad6632f2616c7f59ef256e96fe78bf6a595d1dc4376ac02
+    FROM ubuntu:noble@sha256:186072bba1b2f436cbb91ef2567abca677337cfc786c86e107d25b7072feef0c
     RUN \
         apt-get update && \
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            autoconf automake bc bison build-essential ca-certificates cmake cpio \
-            crossbuild-essential-arm64 curl debhelper dbus-x11 dosfstools e2fsprogs fdisk flex gzip \
-            kmod libncurses-dev libssl-dev libtinfo6 libtool-bin locales rsync xz-utils zstd && \
+            autoconf \
+            automake \
+            bc \
+            bison \
+            build-essential \
+            ca-certificates \
+            cmake \
+            cpio \
+            crossbuild-essential-arm64 \
+            curl \
+            dbus-x11 \
+            debhelper \
+            dosfstools \
+            e2fsprogs \
+            fdisk \
+            flex \
+            gzip \
+            kmod \
+            libelf-dev \
+            libncurses-dev \
+            libssl-dev \
+            libtinfo6 \
+            libtool-bin \
+            locales \
+            python3-dev \
+            python3-setuptools \
+            rsync \
+            swig \
+            xz-utils \
+            zstd \
+        && \
         rm -rf /var/lib/apt/lists/* && \
         sed -i 's/^#\s*\(en_US.UTF-8\)/\1/' /etc/locale.gen && \
         dpkg-reconfigure --frontend noninteractive locales
-    ARG XSCT_URL=https://petalinux.xilinx.com/sswreleases/rel-v2024.2/xsct-trim/xsct-2024.2_REL_1209.tar.xz
-    ARG XSCT_SHA256SUM=2ca6ee6d1349cc6484845b094d867e3953fdfe7d800e8b35863db15f39c2373c
+    ARG XSCT_URL=https://edf.amd.com/sswreleases/rel-v2025.2/xsct-trim/xsct-2025-2_1110.tar.xz
+    ARG XSCT_SHA256SUM=3ae9e4cd07e179a016467d6eb743d04a389af9857a1c72c8c6104cfc47fca823
     RUN --mount=type=tmpfs,target=/tmp \
         curl --no-progress-meter -L "${XSCT_URL}" -o /tmp/xsct.tar.xz && \
         echo "${XSCT_SHA256SUM} /tmp/xsct.tar.xz" | sha256sum -c - && \
@@ -158,7 +186,7 @@ generate-src:
     SAVE ARTIFACT system.bit
 
 rootfs-base.tar:
-    FROM --platform=linux/arm64 ubuntu:noble@sha256:1e622c5f073b4f6bfad6632f2616c7f59ef256e96fe78bf6a595d1dc4376ac02
+    FROM --platform=linux/arm64 ubuntu:noble@sha256:186072bba1b2f436cbb91ef2567abca677337cfc786c86e107d25b7072feef0c
     RUN apt-get update && \
         apt-get install -y --no-install-recommends mmdebstrap && \
         rm -rf /var/lib/apt/lists/*
@@ -188,41 +216,52 @@ rootfs-base.tar:
 bootgen:
     FROM +prep
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/bootgen/archive/refs/tags/xilinx_v2024.2.tar.gz -o /tmp/archive.tar.gz && \
-        echo '2c8345a3bea4fcec6ceb6c8f8e727a610aaca3ec71cdf7f892d7f89f88438650  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/bootgen/archive/refs/tags/xilinx_v2025.2.tar.gz -o /tmp/archive.tar.gz && \
+        echo 'c92d9be48fabc943c4addd9b12beced6671f5547b4f6dc01e7ccf0f274dbef66  /tmp/archive.tar.gz' | sha256sum -c && \
         tar xf /tmp/archive.tar.gz --strip-components=1
-    RUN make
-    SAVE ARTIFACT bootgen
+    ARG nproc=$(nproc)
+    RUN make -j$nproc
+    SAVE ARTIFACT build/bin/bootgen /
 
-linux:
+linux-src:
     FROM +prep
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/linux-xlnx/archive/2b7f6f70a62a52a467bed030a27c2ada879106e9.tar.gz -o /tmp/archive.tar.gz && \
-        echo 'acc0dbd745328782dc67bac8c42cb02a93b9f06cd042177b92d0765af9c5dcfc  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/linux-xlnx/archive/318a47068f7b88de838518897500d7509e3fe205.tar.gz -o /tmp/archive.tar.gz && \
+        echo '42baf4700dce8e4949ccd703046dbf05a654d9442ef8b1f6187d2a968c5c6075  /tmp/archive.tar.gz' | sha256sum -c && \
         tar xf /tmp/archive.tar.gz --strip-components=1
+    SAVE IMAGE linux-src
+
+linux:
+    FROM +linux-src
     COPY linux/defconfig arch/arm64/configs/myboard_defconfig
     ARG nproc=$(nproc)
     RUN make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 myboard_defconfig
-    RUN make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 bindeb-pkg -j$nproc
+    # https://github.com/Xilinx/linux-xlnx/commit/e2c318225ac13083cdcb4780cdf5b90edaa8644d
+    RUN DEB_BUILD_PROFILES=pkg.linux-upstream.nokernelheaders \
+        make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 bindeb-pkg -j$nproc
     SAVE ARTIFACT include/dt-bindings /include/dt-bindings
     SAVE ARTIFACT /*.deb
 
 tf-a:
     FROM +prep
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/arm-trusted-firmware/archive/refs/tags/xilinx-v2024.2.tar.gz -o /tmp/archive.tar.gz && \
-        echo 'dbc8caad320364178f55e8df423877b0029d3913cde000f483dd55a06244471b  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/arm-trusted-firmware/archive/refs/tags/xilinx-v2025.2.tar.gz -o /tmp/archive.tar.gz && \
+        echo '6cd8d24ae778ff712e47b3f83c1478918d2be5d97b5ed736b520720536115212  /tmp/archive.tar.gz' | sha256sum -c && \
         tar xf /tmp/archive.tar.gz --strip-components=1
     ARG nproc=$(nproc)
     RUN make CROSS_COMPILE=aarch64-linux-gnu- ARCH=aarch64 PLAT=zynqmp RESET_TO_BL31=1 ZYNQMP_CONSOLE=cadence1 bl31 -j$nproc
     SAVE ARTIFACT build/zynqmp/release/bl31/bl31.elf /
 
-u-boot:
+u-boot-src:
     FROM +prep
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/u-boot-xlnx/archive/refs/tags/xilinx-v2024.2.tar.gz -o /tmp/archive.tar.gz && \
-        echo '14d01cca4e8c90f4c22b6ca760f7368d167285ead2dbc83162428c0afe0af901  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/u-boot-xlnx/archive/refs/tags/xilinx-v2025.2.tar.gz -o /tmp/archive.tar.gz && \
+        echo '0311cf9cde4dd3ddb9927ba7652377995a9e83c10315bbe83132a12c85a497a4  /tmp/archive.tar.gz' | sha256sum -c && \
         tar xf /tmp/archive.tar.gz --strip-components=1
+    SAVE IMAGE u-boot-src
+
+u-boot:
+    FROM +u-boot-src
     ARG nproc=$(nproc)
     COPY u-boot.defconfig configs/myboard_defconfig
     RUN make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm myboard_defconfig
@@ -233,13 +272,13 @@ u-boot:
 xsct:
     FROM +prep
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/embeddedsw/archive/refs/tags/xilinx_v2024.2.tar.gz -o /tmp/archive.tar.gz && \
-        echo '550ba0b206848adb0085bc1ca5a6b6731681335c92912afb4a6a8dbb4c489a0c  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/embeddedsw/archive/refs/tags/xilinx_v2025.2.tar.gz -o /tmp/archive.tar.gz && \
+        echo 'fb9a705a2974fa4d8d79142baea204d388389b9b37d6f26194b7b759f8978457  /tmp/archive.tar.gz' | sha256sum -c && \
         mkdir -p embeddedsw && \
         tar xf /tmp/archive.tar.gz --strip-components=1 -C embeddedsw
     RUN --mount=type=tmpfs,target=/tmp \
-        curl --no-progress-meter -L https://github.com/Xilinx/device-tree-xlnx/archive/refs/tags/xilinx_v2024.2.tar.gz -o /tmp/archive.tar.gz && \
-        echo 'ef254833819edccfdb3416593f682dc7e0c40d4c6c0d657a80a118fc914bd911  /tmp/archive.tar.gz' | sha256sum -c && \
+        curl --no-progress-meter -L https://github.com/Xilinx/device-tree-xlnx/archive/refs/tags/xilinx_v2025.2.tar.gz -o /tmp/archive.tar.gz && \
+        echo '4cfb49368ae97dde533442b687f95183cc9fd9db77ee249650d4d40a996db363  /tmp/archive.tar.gz' | sha256sum -c && \
         mkdir -p device-tree-xlnx && \
         tar xf /tmp/archive.tar.gz --strip-components=1 -C device-tree-xlnx
 
