@@ -1,5 +1,5 @@
 name: Install EarthBuild
-description: Install EarthBuild v0.8.17 (earth-linux-amd64) to ~/.local/bin/earth
+description: Install EarthBuild v0.8.19 (earth-linux-amd64) to ~/.local/bin/earth
 inputs: {}
 runs:
   using: composite
@@ -47,8 +47,8 @@ runs:
         EOS
 
         curl --location --parallel --parallel-immediate \
-          -O https://github.com/EarthBuild/earthbuild/releases/download/v0.8.17/checksum.asc \
-          -O https://github.com/EarthBuild/earthbuild/releases/download/v0.8.17/earth-linux-amd64
+          -O https://github.com/EarthBuild/earthbuild/releases/download/v0.8.19/checksum.asc \
+          -O https://github.com/EarthBuild/earthbuild/releases/download/v0.8.19/earth-linux-amd64
 
         gpg --no-tty --verify checksum.asc
         gpg --no-tty --output - checksum.asc | grep earth-linux-amd64 | sha256sum --check

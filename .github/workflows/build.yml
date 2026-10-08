@@ -24,11 +24,11 @@ jobs:
           persist-credentials: false
       - name: Install EarthBuild
         uses: ./.github/actions/install-earthbuild
-      - run: earth --artifact --allow-privileged --ci +build/\* --XSA_FILE=design_1_wrapper.xsa /tmp/build/
+      - run: earth --artifact --allow-privileged --ci +build/ --XSA_FILE=design_1_wrapper.xsa /tmp/build
         env:
-          EARTHLY_MAX_REMOTE_CACHE: ${{ github.ref == 'refs/heads/main' }}
-          EARTHLY_PUSH: ${{ github.ref == 'refs/heads/main' }}
-          EARTHLY_REMOTE_CACHE: ghcr.io/tosainu/earthly-zynqmp-example:build-cache
+          EARTH_MAX_REMOTE_CACHE: ${{ github.ref == 'refs/heads/main' }}
+          EARTH_PUSH: ${{ github.ref == 'refs/heads/main' }}
+          EARTH_REMOTE_CACHE: ghcr.io/tosainu/earthly-zynqmp-example:build-cache
           FORCE_COLOR: true
       - uses: actions/upload-artifact@v7.0.1
         with:
