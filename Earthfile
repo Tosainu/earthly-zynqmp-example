@@ -29,10 +29,7 @@ prep:
             libtinfo6 \
             libtool-bin \
             locales \
-            python3-dev \
-            python3-setuptools \
             rsync \
-            swig \
             xz-utils \
             zstd \
         && \
@@ -265,7 +262,7 @@ u-boot:
     ARG nproc=$(nproc)
     COPY u-boot.defconfig configs/myboard_defconfig
     RUN make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm myboard_defconfig
-    RUN make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm u-boot.elf -j$nproc
+    RUN make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm NO_PYTHON=1 u-boot.elf -j$nproc
     SAVE ARTIFACT u-boot.elf
     SAVE ARTIFACT scripts/dtc/dtc /dtc
 
